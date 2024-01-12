@@ -1,3 +1,2 @@
 model/
-get_article_by_keyword.json
-get_comments_by_articleid.json
+example/
