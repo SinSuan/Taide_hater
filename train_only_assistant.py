@@ -13,50 +13,50 @@ from transformers import (
 from peft import LoraConfig, PeftModel
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
-model_name = "taide_model/b.11.0.0" # 原始模型
-new_model = "taide-11.0_v2" # 訓練好的模型
+PATH_2_MODEL_ORIGINAL = "taide_model/b.11.0.0" # 原始模型
+PATH_2_MODEL_TRAINED = "taide-11.0_v2" # 訓練好的模型
 output_dir = "./results" # tensorboard結果
 
 # lora parameters
-lora_r = 64 
-lora_alpha = 16
-lora_dropout = 0.1
+LORA_R = 64 
+LORA_ALPHA = 16
+LORA_DROPOUT = 0.1
 
 # 4-bit quantization configuration
-use_4bit = True
-bnb_4bit_compute_dtype = "bfloat16"
-bnb_4bit_quant_type = "nf4"
-use_double_quant = False
+USE_4BIT = True
+BNB_4BIT_COMPUTE_DTYPE = "bfloat16"
+BNB_4BIT_QUANT_TYPE = "nf4"
+USE_DOUBLE_QUANT = False
 
-fp16 = False
-bf16 = True
+FP16 = False
+BF16 = True
 
 
 # training configuration
-num_train_epochs = 1
-per_device_train_batch_size = 8
-per_device_eval_batch_size = 8
-gradient_accumulation_steps = 1
-gradient_checkpointing = True
+NUM_TRAIN_EPOCHS = 1
+PER_DEVICE_TRAIN_BATCH_SIZE = 8
+PER_DEVICE_EVAL_BATCH_SIZE = 8
+GRANDIENT_ACCUMLATION_STEPS = 1
+GRANDIENT_CHECKPOINTING = True
 
-max_grad_norm = 0.3
-learning_rate = 5e-5
-weight_decay = 0.001
+MAX_GRAD_NORM = 0.3
+LEARNING_RATE = 5e-5
+WEIGHT_DECAY = 0.001
 
-optim = "paged_adamw_32bit"
-lr_scheduler_type = "cosine"
+OPTIM = "paged_adamw_32bit"
+LR_SCHEDULER_TYPE = "cosine"
 
-max_steps = -1
-warmup_ratio = 0.03
+MAX_STEPS = -1
+WARMUP_RATIO = 0.03
 
-group_by_length = True
+GROUP_BY_LENGTH = True
 
-save_steps = 0
-logging_steps = 25
-max_seq_length = 4096
-packing = False
+SAVE_STEPS = 0
+LOGGING_STEPS = 25
+MAX_SEQ_LENGTH = 4096
+PACKING = False
 
-device_map = "auto"
+DEVICE_MAP = "auto"
 
 # load dataset
 dataset = load_dataset('json',data_files={
@@ -65,17 +65,17 @@ dataset = load_dataset('json',data_files={
                         }, split="train")
 
 # Load tokenizer and model with QLoRA configuration
-compute_dtype = getattr(torch, bnb_4bit_compute_dtype)
+compute_dtype = getattr(torch, BNB_4BIT_COMPUTE_DTYPE)
 
 bnb_config = BitsAndBytesConfig(
-    load_in_4bit=use_4bit,
-    bnb_4bit_quant_type=bnb_4bit_quant_type,
+    load_in_4bit=USE_4BIT,
+    bnb_4bit_quant_type=BNB_4BIT_QUANT_TYPE,
     bnb_4bit_compute_dtype=compute_dtype,
-    bnb_4bit_use_double_quant=use_double_quant,
+    bnb_4bit_use_double_quant=USE_DOUBLE_QUANT,
 )
 
 # Check GPU compatibility with bfloat16
-if compute_dtype == torch.bfloat16 and use_4bit:
+if compute_dtype == torch.bfloat16 and USE_4BIT:
     major, _ = torch.cuda.get_device_capability()
     if major >= 8:
         print("=" * 80)
@@ -84,22 +84,22 @@ if compute_dtype == torch.bfloat16 and use_4bit:
 
 # Load base model
 model = AutoModelForCausalLM.from_pretrained(
-    model_name,
+    PATH_2_MODEL_ORIGINAL,
     quantization_config=bnb_config,
-    device_map=device_map
+    device_map=DEVICE_MAP
 )
 model.config.use_cache = False
 model.config.pretraining_tp = 1
 
 # Load LLaMA tokenizer
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(PATH_2_MODEL_ORIGINAL, trust_remote_code=True)
 tokenizer.padding_side = "right"
 
 # Load LoRA configuration
 peft_config = LoraConfig(
-    lora_alpha=lora_alpha,
-    lora_dropout=lora_dropout,
-    r=lora_r,
+    lora_alpha=LORA_ALPHA,
+    lora_dropout=LORA_DROPOUT,
+    r=LORA_R,
     bias="none",
     task_type="CAUSAL_LM",
 )
@@ -107,21 +107,21 @@ peft_config = LoraConfig(
 # Set training parameters
 training_arguments = TrainingArguments(
     output_dir=output_dir,
-    num_train_epochs=num_train_epochs,
-    per_device_train_batch_size=per_device_train_batch_size,
-    gradient_accumulation_steps=gradient_accumulation_steps,
-    optim=optim,
-    save_steps=save_steps,
-    logging_steps=logging_steps,
-    learning_rate=learning_rate,
-    weight_decay=weight_decay,
-    fp16=fp16,
-    bf16=bf16,
-    max_grad_norm=max_grad_norm,
-    max_steps=max_steps,
-    warmup_ratio=warmup_ratio,
-    group_by_length=group_by_length,
-    lr_scheduler_type=lr_scheduler_type,
+    num_train_epochs=NUM_TRAIN_EPOCHS,
+    per_device_train_batch_size=PER_DEVICE_TRAIN_BATCH_SIZE,
+    gradient_accumulation_steps=GRANDIENT_ACCUMLATION_STEPS,
+    optim=OPTIM,
+    save_steps=SAVE_STEPS,
+    logging_steps=LOGGING_STEPS,
+    learning_rate=LEARNING_RATE,
+    weight_decay=WEIGHT_DECAY,
+    fp16=FP16,
+    bf16=BF16,
+    max_grad_norm=MAX_GRAD_NORM,
+    max_steps=MAX_STEPS,
+    warmup_ratio=WARMUP_RATIO,
+    group_by_length=GROUP_BY_LENGTH,
+    lr_scheduler_type=LR_SCHEDULER_TYPE,
     report_to="tensorboard"
 )
 
@@ -138,24 +138,24 @@ trainer = SFTTrainer(
     peft_config=peft_config,
     dataset_text_field="text",
     data_collator=collator,
-    max_seq_length=max_seq_length,
+    max_seq_length=MAX_SEQ_LENGTH,
     tokenizer=tokenizer,
     args=training_arguments,
-    packing=packing,
+    packing=PACKING,
 )
 
 trainer.train()
-trainer.model.save_pretrained(new_model) # 儲存lora參數
+trainer.model.save_pretrained(PATH_2_MODEL_TRAINED) # 儲存lora參數
 
 base_model = AutoModelForCausalLM.from_pretrained(
-    model_name,
+    PATH_2_MODEL_ORIGINAL,
     low_cpu_mem_usage=True,
     return_dict=True,
     torch_dtype=torch.float16,
-    device_map=device_map,
+    device_map=DEVICE_MAP,
 )
-model = PeftModel.from_pretrained(base_model, new_model)
+model = PeftModel.from_pretrained(base_model, PATH_2_MODEL_TRAINED)
 model = model.merge_and_unload() # 將lora與原始模型融合
 
-model.save_pretrained(new_model+"-full") # 儲存完整模型
-tokenizer.save_pretrained(new_model+"-full")
+model.save_pretrained(PATH_2_MODEL_TRAINED+"-full") # 儲存完整模型
+tokenizer.save_pretrained(PATH_2_MODEL_TRAINED+"-full")

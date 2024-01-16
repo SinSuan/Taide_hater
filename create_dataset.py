@@ -41,15 +41,17 @@ def get_total_article(address_2_article):
     return total_article
 
 def get_total_comment(total_article):
-    print("\n\nenter get_total_comment\n\n")
+    print("\n\n\t***enter get_total_comment***\n\n")
     
     total_article_id = total_article.keys()
-    print(f"total_article_id = {total_article_id}")
+    print(f"""total_article_id =
+          {total_article_id}""")
     
     total_comment = {}
     for article_id in total_article_id:
         address_2_comment = get_address_2_comment(article_id)
-        print(f"{article_id}\taddress_2_comment = {address_2_comment}")
+        print(f"""{article_id}\taddress_2_comment =
+              {address_2_comment}""")
         
         r = requests.get(address_2_comment)
         r = r.json()
@@ -66,7 +68,7 @@ def get_total_comment(total_article):
             
         total_comment[article_id] = total_comment_4_article_id
     
-    print("\n\nexit get_total_comment\n\n")
+    print("\n\n\t***exit get_total_comment***\n\n")
     return total_comment
 
 def concat_prompt(article, comment):
@@ -94,7 +96,7 @@ def create_dataset(total_article, total_comment):
         total_comment_4_article = total_comment[article_id]
         for comment_4_article in total_comment_4_article:
             data = concat_prompt(article["content"], comment_4_article["content"])
-            _dataset_.append(data)
+            _dataset_.append({"text":data})
     return _dataset_
 
 def main():
@@ -105,22 +107,26 @@ def main():
     UNIX_end_stamp = (UNIX_end - datetime.timedelta(hours=8)).timestamp()
     
     address_2_article = get_address_2_article(UNIX_sta_stamp, UNIX_end_stamp, KEYWORD, 5)
-    print(f"address_2_article = {address_2_article}")
+    print(f"""address_2_article =
+          {address_2_article}""")
     
     total_article = get_total_article(address_2_article)
-    print(f"len(total_article) = {len(total_article)}")
+    print(f"""len(total_article) =
+          {len(total_article)}""")
     total_article_id = list(total_article.keys())
-    print(f"""total_article[total_article_id[0]] = {total_article[total_article_id[0]]}""")
+    print(f"""total_article[total_article_id[0]] =
+          {total_article[total_article_id[0]]}""")
     
     total_comment = get_total_comment(total_article)
-    print(f"""len(total_article) = {len(total_comment)}""")
+    print(f"""len(total_article) =
+          {len(total_comment)}""")
     print(f"""len(total_article[total_article_id]) =
           {len(total_comment[total_article_id[0]])}""")
     print(f"""len(total_article[total_article_id]) =
           {total_comment[total_article_id[0]][0]}""")
     
     _dataset_ = create_dataset(total_article, total_comment)
-    print(f"_dataset_ = {_dataset_}")
+    print(f"_dataset_[0] = {_dataset_[0]}")
     
     with open("example/test.json", "w", encoding="utf-8") as json_file:
         json.dump(_dataset_, json_file, ensure_ascii=False)
