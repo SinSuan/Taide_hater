@@ -37,8 +37,8 @@ PATH_2_DATA_EVAL = "/user_data/my/project/Taide_hater/data/test.json"
 
 # 路徑不對會出現
 # If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `huggingface-cli login` or by passing `token=<your_token>`
-PATH_2_MODEL_ORIGINAL = "model/b.11.0.0" # 原始模型
-PATH_2_MODEL_TRAINED = "model/test/20240117_1424" # 訓練好的模型
+PATH_2_MODEL_ORIGINAL = "model/b.1.0.0" # 原始模型; b.11.0.0 壞掉了
+PATH_2_MODEL_TRAINED = "model/test/20240117_1614_b100" # 訓練好的模型
 OUTPUT_DIR = "./results" # tensorboard結果
 
 # lora parameters
@@ -171,7 +171,8 @@ def param_4_trainer(tokenizer: AutoTokenizer) -> ['Config', TrainingArguments, '
     collator = DataCollatorForCompletionOnlyLM(
         instruction_template=INSTRUCTION_TEMPLATE,
         response_template=RESPONSE_TEMPLATE,
-        tokenizer=tokenizer, mlm=False
+        tokenizer=tokenizer,
+        mlm=False,
     )
 
     return peft_config, training_arguments, collator
@@ -227,33 +228,23 @@ def main():
     trainer.train()
     trainer.model.save_pretrained(PATH_2_MODEL_TRAINED) # 儲存lora參數
 
-    # # 'transformers.models.llama.modeling_llama.LlamaForCausalLM'
-    # base_model = AutoModelForCausalLM.from_pretrained(
-    #     PATH_2_MODEL_ORIGINAL,      # pretrained_model_name_or_path
-    #     low_cpu_mem_usage=True,
-    #     #       ***transformers.models.from_pretrained***
-    #     # Tries to not use more than 1x model size in CPU memory while loading the model
-    #     return_dict=True,
-    #     # https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration
-    #     torch_dtype=torch.float16,
-    #     #       ***transformers.models.from_pretrained***
-    #     # default to torch.float (fp32).
-    #     device_map=DEVICE_MAP,
-    #     #       ***transformers.models.from_pretrained***
-    #     # specifies the devices on which each submodule (ex: layers in a model) should execute on
-    #     # "cpu", "cuda:1", "mps" -> entire model to this device
-    #     # 0 -> entire model to GPU 0
-    #     # "auto" -> Accelerate will compute the most optimized 'device_map' automatically
-    # )
-
-    base_model = LlamaForCausalLM.from_pretrained(
-        PATH_2_MODEL_ORIGINAL,
+    # 'transformers.models.llama.modeling_llama.LlamaForCausalLM'
+    base_model = AutoModelForCausalLM.from_pretrained(
+        PATH_2_MODEL_ORIGINAL,      # pretrained_model_name_or_path
         low_cpu_mem_usage=True,
+        #       ***transformers.models.from_pretrained***
+        # Tries to not use more than 1x model size in CPU memory while loading the model
         return_dict=True,
+        # https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration
         torch_dtype=torch.float16,
+        #       ***transformers.models.from_pretrained***
+        # default to torch.float (fp32).
         device_map=DEVICE_MAP,
-
-        quantization_config=bnb_config,
+        #       ***transformers.models.from_pretrained***
+        # specifies the devices on which each submodule (ex: layers in a model) should execute on
+        # "cpu", "cuda:1", "mps" -> entire model to this device
+        # 0 -> entire model to GPU 0
+        # "auto" -> Accelerate will compute the most optimized 'device_map' automatically
     )
 
     # https://huggingface.co/docs/peft/v0.7.1/en/package_reference/peft_model
@@ -262,7 +253,7 @@ def main():
     # 
     model = model.merge_and_unload() # 將lora與原始模型融合
 
-    model02.save_pretrained(PATH_2_MODEL_TRAINED+"-full") # 儲存完整模型
+    model.save_pretrained(PATH_2_MODEL_TRAINED+"-full") # 儲存完整模型
     tokenizer.save_pretrained(PATH_2_MODEL_TRAINED+"-full")
 
     print("\twell done")
