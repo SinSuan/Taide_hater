@@ -73,12 +73,13 @@ def get_total_comment(total_article):
 
 def concat_prompt(article, comment):
     """
+    ***重要：<s>、[INST]、<SYS>、</s>、[/INST]、</SYS> 前後都要空格，不然模型抓不到這些 token***
     formal    :  f"<s> [INST] <SYS> {system_promt} </SYS> {user_promt} [/INST] {answer} </s>"
     train     :      f"[INST] <SYS> {system_promt} </SYS> {user_promt} [/INST] {answer} </s>"
     inference :      f"[INST] <SYS> {system_promt} </SYS> {user_promt} [/INST]"
     """
     prompt_sys = "你是一個酸民，看完文章："
-    prompt_full = f"[INST] <SYS>{prompt_sys}</SYS>「{article}」會回答：[/INST] {comment} </s>"
+    prompt_full = f" [INST] <SYS> {prompt_sys} </SYS> 「{article}」會回答： [/INST] {comment} </s>"
     return prompt_full
 
 # def create_dataset_4_article_id(article_4_article_id, total_comment_4_article_id):
@@ -128,7 +129,7 @@ def main():
     _dataset_ = create_dataset(total_article, total_comment)
     print(f"_dataset_[0] = {_dataset_[0]}")
     
-    with open("example/test.json", "w", encoding="utf-8") as json_file:
+    with open("data/test.json", "w", encoding="utf-8") as json_file:
         json.dump(_dataset_, json_file, ensure_ascii=False)
     
 
