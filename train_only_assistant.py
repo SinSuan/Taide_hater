@@ -5,6 +5,7 @@ ex: type(model) == 'transformers.models.llama.modeling_llama.LlamaForCausalLM'
 """
 
 # import os
+import time
 import torch
 from datasets import (
     load_dataset,
@@ -110,13 +111,26 @@ def print_gpu_compatibility(dtype1, dtype2) -> None:
             print("Your GPU supports bfloat16: accelerate training with bf16=True")
             print("=" * 80)
 
-def load_model(path_2_model: str, config) -> LlamaForCausalLM:
+def load_model(path_2_model, config= None) -> LlamaForCausalLM:
     """Load model
+    
+    PARAMETER
+    ---------
+    path_2_model: str
+        "original" or the path to a specific model
+        
+    config: BitsAndBytesConfig
+        the Config for the argument 'quantization_config'. Default to None
+        
+    Return
+    ------
+    LlamaForCausalLM
     """
 
     # Load base model
     model = AutoModelForCausalLM.from_pretrained(
         path_2_model,
+        low_cpu_mem_usage=True,
         quantization_config=config,
         device_map=DEVICE_MAP
     )
@@ -203,6 +217,8 @@ def main():
         # enable nested quantization (get the quantization constants from the 1st quantization.)
         # defaults to False.
     )
+    
+    print(f"type(bnb_config)=\n{type(bnb_config)}")
 
     model = load_model(PATH_2_MODEL_ORIGINAL, bnb_config)
     tokenizer = load_tokenizer(PATH_2_MODEL_ORIGINAL)
@@ -228,6 +244,8 @@ def main():
     trainer.train()
     trainer.model.save_pretrained(PATH_2_MODEL_TRAINED) # 儲存lora參數
 
+    print("\twell done trainer.model.save_pretrained")
+    
     # 'transformers.models.llama.modeling_llama.LlamaForCausalLM'
     base_model = AutoModelForCausalLM.from_pretrained(
         PATH_2_MODEL_ORIGINAL,      # pretrained_model_name_or_path
@@ -249,7 +267,7 @@ def main():
 
     # https://huggingface.co/docs/peft/v0.7.1/en/package_reference/peft_model
     model = PeftModel.from_pretrained(base_model, PATH_2_MODEL_TRAINED) # infernece 時，這樣可能就可以用了
-    
+    print("\twell done model = PeftModel")
     # 
     model = model.merge_and_unload() # 將lora與原始模型融合
 

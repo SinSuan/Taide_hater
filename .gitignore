@@ -2,3 +2,5 @@ model/
 example/
 data/
 test/
+results/
+requirements_123.txt
