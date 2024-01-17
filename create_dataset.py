@@ -18,23 +18,28 @@ KEYWORD = "賴清德"
 
 DIR_4_DATASET = "data/"
 
-def get_unix_time()-> [int, int]:
+def get_unix_time_stamp(year, month, day, hour, minute, second):
+    """
+    (None)
+    """
+    tw_time = datetime.datetime(year, month, day, hour, minute, second)
+
+    # '- datetime.timedelta(hours=8)' for getting the time zone of england
+    unix_time = tw_time - datetime.timedelta(hours=8)
+
+    unix_time_stamp = (unix_time - datetime.timedelta(hours=8)).timestamp()
+    unix_time_stamp = int(unix_time_stamp)
+
+    return unix_time_stamp
+
+def get_search_range()-> [int, int]:
     """
     use the global var:
         YEAR, MONTH, DAY, HOUR, MINUTE, SECOND
     """
-    tw_sta = datetime.datetime(YEAR, MONTH, DAY, HOUR, MINUTE-1, SECOND)
-    tw_end = datetime.datetime(YEAR, MONTH, DAY, HOUR, MINUTE+1, SECOND)
 
-    # '- datetime.timedelta(hours=8)' for getting the time zone of england
-    unix_sta = tw_sta - datetime.timedelta(hours=8)
-    unix_end = tw_end - datetime.timedelta(hours=8)
-
-    unix_sta_stamp = (unix_sta - datetime.timedelta(hours=8)).timestamp()
-    unix_end_stamp = (unix_end - datetime.timedelta(hours=8)).timestamp()
-
-    unix_sta_stamp = int(unix_sta_stamp)
-    unix_end_stamp = int(unix_end_stamp)
+    unix_sta_stamp = get_unix_time_stamp(YEAR, MONTH, DAY, HOUR, MINUTE-1, SECOND)
+    unix_end_stamp = get_unix_time_stamp(YEAR, MONTH, DAY, HOUR, MINUTE+1, SECOND)
 
     return unix_sta_stamp, unix_end_stamp
 
@@ -137,13 +142,6 @@ def concat_prompt(article, comment):
     prompt_full = f" [INST] <<SYS>> {prompt_sys} <</SYS>> 「{article}」會回答： [/INST] {comment} </s>"
     return prompt_full
 
-# def create_dataset_4_article_id(article_4_article_id, total_comment_4_article_id):
-#     dataset_for_article_id = []
-#     for comment_4_article_id in total_comment_4_article_id:
-#         data = concat_prompt(article_4_article_id, comment_4_article_id)
-#         dataset_for_article_id.append(data)
-#     return dataset_for_article_id
-
 def create_dataset(total_article, total_comment):
     """
     Return
@@ -172,29 +170,29 @@ def main():
     """main function
     create and save a dataset to DIR_4_DATASET
     """
-    unix_sta_stamp, unix_end_stamp = get_unix_time()
+    unix_sta_stamp, unix_end_stamp = get_search_range()
 
     address_2_article = get_address_2_article(unix_sta_stamp, unix_end_stamp, KEYWORD, 5)
-    print(f"""address_2_article =
-          {address_2_article}""")
+    # print(f"""address_2_article =
+    #       {address_2_article}""")
 
     total_article = get_total_article(address_2_article)
-    print(f"""len(total_article) =
-          {len(total_article)}""")
-    total_article_id = list(total_article.keys())
-    print(f"""total_article[total_article_id[0]] =
-          {total_article[total_article_id[0]]}""")
+    # print(f"""len(total_article) =
+    #       {len(total_article)}""")
+    # total_article_id = list(total_article.keys())
+    # print(f"""total_article[total_article_id[0]] =
+    #       {total_article[total_article_id[0]]}""")
 
     total_comment = get_total_comment(total_article)
-    print(f"""len(total_article) =
-          {len(total_comment)}""")
-    print(f"""len(total_article[total_article_id]) =
-          {len(total_comment[total_article_id[0]])}""")
-    print(f"""len(total_article[total_article_id]) =
-          {total_comment[total_article_id[0]][0]}""")
+    # print(f"""len(total_article) =
+    #       {len(total_comment)}""")
+    # print(f"""len(total_article[total_article_id]) =
+    #       {len(total_comment[total_article_id[0]])}""")
+    # print(f"""len(total_article[total_article_id]) =
+    #       {total_comment[total_article_id[0]][0]}""")
 
     _dataset_ = create_dataset(total_article, total_comment)
-    print(f"_dataset_[0] = {_dataset_[0]}")
+    # print(f"_dataset_[0] = {_dataset_[0]}")
 
     with open(DIR_4_DATASET + "test.json", "w", encoding="utf-8") as json_file:
         json.dump(_dataset_, json_file, ensure_ascii=False)
