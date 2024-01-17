@@ -38,7 +38,7 @@ PATH_2_DATA_EVAL = "/user_data/my/project/Taide_hater/data/test.json"
 # 路徑不對會出現
 # If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `huggingface-cli login` or by passing `token=<your_token>`
 PATH_2_MODEL_ORIGINAL = "model/b.11.0.0" # 原始模型
-PATH_2_MODEL_TRAINED = "model/test/20240117_1327" # 訓練好的模型
+PATH_2_MODEL_TRAINED = "model/test/20240117_1424" # 訓練好的模型
 OUTPUT_DIR = "./results" # tensorboard結果
 
 # lora parameters
@@ -48,10 +48,9 @@ LORA_DROPOUT = 0.1
 
 # 4-bit quantization configuration
 USE_4BIT = True
-# USE_4BIT = False
-BNB_4BIT_COMPUTE_DTYPE = "bfloat16"
 BNB_4BIT_QUANT_TYPE = "nf4" # normalized float 4
 USE_DOUBLE_QUANT = False
+BNB_4BIT_COMPUTE_DTYPE = "bfloat16"
 
 FP16 = False
 BF16 = True
@@ -91,7 +90,7 @@ def create_dataset(datapath: str) -> Dataset:
     """
     123
     """
-    
+
     dataset = load_dataset(
         'json',
         data_files=datapath,
@@ -103,7 +102,7 @@ def create_dataset(datapath: str) -> Dataset:
 def print_gpu_compatibility(dtype1, dtype2) -> None:
     """Check GPU compatibility with bfloat16
     """
-    
+
     if dtype1 == dtype2 and USE_4BIT:
         major, _ = torch.cuda.get_device_capability()
         if major >= 8:
@@ -183,7 +182,6 @@ def main():
     """
 
     # Load tokenizer and model with QLoRA configuration
-
     compute_dtype = getattr(torch, BNB_4BIT_COMPUTE_DTYPE)
 
     # Check GPU compatibility with bfloat16
@@ -226,36 +224,47 @@ def main():
         packing=PACKING,
     )
 
-    
     trainer.train()
     trainer.model.save_pretrained(PATH_2_MODEL_TRAINED) # 儲存lora參數
 
-    # 'transformers.models.llama.modeling_llama.LlamaForCausalLM'
-    base_model = AutoModelForCausalLM.from_pretrained(
-        PATH_2_MODEL_ORIGINAL,      # pretrained_model_name_or_path
+    # # 'transformers.models.llama.modeling_llama.LlamaForCausalLM'
+    # base_model = AutoModelForCausalLM.from_pretrained(
+    #     PATH_2_MODEL_ORIGINAL,      # pretrained_model_name_or_path
+    #     low_cpu_mem_usage=True,
+    #     #       ***transformers.models.from_pretrained***
+    #     # Tries to not use more than 1x model size in CPU memory while loading the model
+    #     return_dict=True,
+    #     # https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration
+    #     torch_dtype=torch.float16,
+    #     #       ***transformers.models.from_pretrained***
+    #     # default to torch.float (fp32).
+    #     device_map=DEVICE_MAP,
+    #     #       ***transformers.models.from_pretrained***
+    #     # specifies the devices on which each submodule (ex: layers in a model) should execute on
+    #     # "cpu", "cuda:1", "mps" -> entire model to this device
+    #     # 0 -> entire model to GPU 0
+    #     # "auto" -> Accelerate will compute the most optimized 'device_map' automatically
+    # )
+
+    base_model = LlamaForCausalLM.from_pretrained(
+        PATH_2_MODEL_ORIGINAL,
         low_cpu_mem_usage=True,
-        #       ***transformers.models.from_pretrained***
-        # Tries to not use more than 1x model size in CPU memory while loading the model
         return_dict=True,
-        # https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration
         torch_dtype=torch.float16,
-        #       ***transformers.models.from_pretrained***
-        # default to torch.float (fp32).
         device_map=DEVICE_MAP,
-        #       ***transformers.models.from_pretrained***
-        # specifies the devices on which each submodule (ex: layers in a model) should execute on
-        # "cpu", "cuda:1", "mps" -> entire model to this device
-        # 0 -> entire model to GPU 0
-        # "auto" -> Accelerate will compute the most optimized 'device_map' automatically
+
+        quantization_config=bnb_config,
     )
-    
-    
+
+    # https://huggingface.co/docs/peft/v0.7.1/en/package_reference/peft_model
     model = PeftModel.from_pretrained(base_model, PATH_2_MODEL_TRAINED) # infernece 時，這樣可能就可以用了
+    
+    # 
     model = model.merge_and_unload() # 將lora與原始模型融合
 
-    model.save_pretrained(PATH_2_MODEL_TRAINED+"-full") # 儲存完整模型
+    model02.save_pretrained(PATH_2_MODEL_TRAINED+"-full") # 儲存完整模型
     tokenizer.save_pretrained(PATH_2_MODEL_TRAINED+"-full")
-    
+
     print("\twell done")
 
 if __name__ == '__main__':
